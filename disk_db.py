@@ -49,14 +49,36 @@ mapper(File, file_table,
 Session = sessionmaker()
 session = Session()
 
-vol_q = session.query(Volume)
-vol1 = vol_q.get(1)
 
-f= File('a/b/c', '1234', volume = vol1, mtime=datetime.now())
-session.save(f)
-session.flush()
-session.commit()
+class DbWriter(object):
+    def __init__(self, volume):
+        self.volume = volume
+        self.session = session
 
-files = session.query(File)
-print '###########'
-print 'files:', files.count()
+    def write_file(self, full_path, md5, mtime=None):
+        #print '%s|%s|%s' % (name, full_path, md5)
+        print '%s %s' % (md5, full_path)
+        print '%s %s' % (md5, full_path)
+        if mtime:
+            mtime = datetime.fromtimestamp(mtime)
+        f= File(full_path, md5, mtime=mtime)
+        self.session.save(f)
+
+    def end_dir(self):
+        self.session.flush()
+        self.session.commit()
+
+
+if __name__ == '__main__':
+
+    vol_q = session.query(Volume)
+    vol1 = vol_q.get(1)
+
+    f= File('a/b/c', '1234', volume = vol1, mtime=datetime.now())
+    session.save(f)
+    session.flush()
+    session.commit()
+
+    files = session.query(File)
+    print '###########'
+    print 'files:', files.count()
