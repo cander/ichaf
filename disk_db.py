@@ -1,3 +1,4 @@
+import os
 from sqlalchemy import *
 from sqlalchemy.orm import *
 from datetime import datetime
@@ -26,11 +27,24 @@ file_table = Table(
 
 metadata.create_all()
 
-class File(object) : pass
+class File(object): 
+    def __init__(self, full_path, md5, uncompressed_md5=None, mtime=None,
+                 volume=None):
+        self.full_path = full_path
+        self.file_name = os.path.basename(full_path)
+        self.md5 = md5
+        if uncompressed_md5 == None:
+            self.uncompressed_md5 = md5
+        else:
+            self.uncompressed_md5 = uncompressed_md5
+        self.mtime = mtime
+        self.volume = volume
+
 class Volume(object) : pass
 
 mapper(Volume, volume_table)
-mapper(File, file_table)
+mapper(File, file_table, 
+       properties=dict(volume=relation(Volume, uselist=False)))
 
 Session = sessionmaker()
 session = Session()
@@ -38,11 +52,7 @@ session = Session()
 vol_q = session.query(Volume)
 vol1 = vol_q.get(1)
 
-f= File()
-f.vol_id = vol1
-f.full_path = 'a/b/c'
-f.file_name = 'c'
-f.md5 = '1234'
+f= File('a/b/c', '1234', volume = vol1, mtime=datetime.now())
 session.save(f)
 session.flush()
 session.commit()
