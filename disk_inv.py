@@ -5,6 +5,7 @@ import os
 import stat
 from types import StringTypes
 import hashlib
+from subprocess import Popen, PIPE
 
 from disk_db import File, DbWriter
 
@@ -18,26 +19,44 @@ def inventory(root_dir, writer):
             sbuf = os.stat(full_path)
             if  stat.S_ISREG(sbuf[stat.ST_MODE]):
                 mtime = sbuf[stat.ST_MTIME]
-                md5 = md5_file(full_path)
+                (md5, unc_md5) = md5_filename(full_path)
                 sb = os.stat(full_path)
-                writer.write_file(full_path, md5, mtime=mtime)
+                writer.write_file(full_path, md5, unc_md5, mtime=mtime)
         writer.end_dir()
 
-def md5_file(file):
+def md5_filename(path):
+    """Compute regular and uncompressed hashes of a named file."""
     close_file = False
-    if isinstance(file, StringTypes):
-        file = open(file, 'r')
-        close_file = True
+    file = open(path, 'r')
+    md5 = md5_file(file)
+    file.close()
 
+    # look for a compressed file
+    pipe = None
+    if path.endswith('.gz'):
+        cmd = 'gzip -d < %s' % path
+        print 'uncompress cmd:', cmd
+        pipe = Popen(cmd, shell=True, bufsize=1024 * 4, stdout=PIPE).stdout
+    # else compress, etc
+
+    if pipe:
+        uncompressed_md5 = md5_file(pipe)
+        # XXX - should check the exit status
+    else:
+        uncompressed_md5 = md5
+
+    return (md5, uncompressed_md5)
+
+
+
+def md5_file(file):
+    """Compute an MD5 hash on a file (like) object."""
     md5 = hashlib.md5()
-    BLOCK_SIZE = 40*1024
+    BLOCK_SIZE = 64*1024
     block = file.read(BLOCK_SIZE)
     while block:
         md5.update(block)
         block = file.read(BLOCK_SIZE)
-
-    if close_file:
-        file.close()
 
     return md5.hexdigest()
 

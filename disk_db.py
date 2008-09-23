@@ -55,13 +55,12 @@ class DbWriter(object):
         self.volume = volume
         self.session = session
 
-    def write_file(self, full_path, md5, mtime=None):
+    def write_file(self, full_path, md5, unc_md5, mtime=None):
         #print '%s|%s|%s' % (name, full_path, md5)
-        print '%s %s' % (md5, full_path)
-        print '%s %s' % (md5, full_path)
+        print '%s %s %s' % (md5, full_path, unc_md5)
         if mtime:
             mtime = datetime.fromtimestamp(mtime)
-        f= File(full_path, md5, mtime=mtime)
+        f= File(full_path, md5, unc_md5, mtime=mtime)
         self.session.save(f)
 
     def end_dir(self):
