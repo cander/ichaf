@@ -6,6 +6,7 @@ import stat
 from types import StringTypes
 import hashlib
 from subprocess import Popen, PIPE
+import tarfile
 
 from disk_db import File, DbWriter
 
@@ -19,10 +20,21 @@ def inventory(root_dir, writer):
             sbuf = os.stat(full_path)
             if  stat.S_ISREG(sbuf[stat.ST_MODE]):
                 mtime = sbuf[stat.ST_MTIME]
-                (md5, unc_md5) = md5_filename(full_path)
-                sb = os.stat(full_path)
-                writer.write_file(full_path, md5, unc_md5, mtime=mtime)
+                catalog_file(full_path, full_path, mtime, writer)
+                #(md5, unc_md5) = md5_filename(full_path)
+                #writer.write_file(full_path, md5, unc_md5, mtime=mtime)
+                if is_archive(filename):
+                    inventory_archive(full_path, full_path, writer)
         writer.end_dir()
+
+def catalog_file(full_path, recorded_path, mtime, writer):
+    """
+    Catalog one file in the file system (full_path) under the name
+    recorded_path.
+    """
+    (md5, unc_md5) = md5_filename(full_path)
+    writer.write_file(recorded_path, md5, unc_md5, mtime=mtime)
+
 
 def md5_filename(path):
     """Compute regular and uncompressed hashes of a named file."""
@@ -61,6 +73,34 @@ def md5_file(file):
     return md5.hexdigest()
 
 
+def is_archive(filename):
+    """Is this file an archive that we're prepared to index?"""
+    # XXX - only deal with tar files, right now
+    result = filename.endswith('.tar')
+    return result
+
+def inventory_archive(full_path, short_path, writer):
+    """Inventory an archive file."""
+    extract_dir = '/tmp/extract'    #XXX - hardcoded
+    #prefix = '%s/[%s]' % (os.path.dirname(short_path),
+    #                      os.path.basename(short_path))
+    prefix = os.path.join(os.path.dirname(short_path),
+                          '[%s]' % os.path.basename(short_path))
+    # XXX - assume tar files, right now
+    # figure out the right mode and type of archiver
+    mode = 'r:*'
+    archive = tarfile.open(full_path)
+    for file in archive:
+        if file.isfile():
+            mtime = file.mtime
+            extract_path = os.path.join(extract_dir, file.name)
+            recorded_path = os.path.join(prefix, file.name)
+            # XXX - is extract safe in the presence of absolute paths?
+            archive.extract(file, extract_dir)
+            print 'extracted', extract_path, os.path.exists(extract_path)
+            catalog_file(extract_path, recorded_path, mtime, writer)
+            os.unlink(extract_path)
+    writer.end_dir()
 
 
 
