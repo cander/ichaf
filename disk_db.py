@@ -4,7 +4,7 @@ from sqlalchemy.orm import *
 from datetime import datetime
 
 metadata = MetaData('sqlite:///disks.db')
-metadata.bind.echo = True
+#metadata.bind.echo = True
 
 volume_table = Table(
     'volume', metadata,

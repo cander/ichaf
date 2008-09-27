@@ -76,8 +76,11 @@ def md5_file(file):
 def is_archive(filename):
     """Is this file an archive that we're prepared to index?"""
     # XXX - only deal with tar files, right now
-    result = filename.endswith('.tar')
-    return result
+    extensions = [ '.tar', '.tar.gz', '.tgz', '.tar.Z' ]
+    for ext in extensions:
+        if filename.endswith(ext):
+            return True
+    return False
 
 def inventory_archive(full_path, short_path, writer):
     """Inventory an archive file."""
@@ -88,8 +91,14 @@ def inventory_archive(full_path, short_path, writer):
                           '[%s]' % os.path.basename(short_path))
     # XXX - assume tar files, right now
     # figure out the right mode and type of archiver
-    mode = 'r:*'
-    archive = tarfile.open(full_path)
+    if full_path.endswith('.tar.Z'):
+        cmd = 'zcat %s' % full_path
+        pipe = Popen(cmd, shell=True, bufsize=4096, stdout=PIPE).stdout
+        archive = tarfile.open(full_path, 'r|', pipe)
+    else:
+        mode = 'r:*'
+        archive = tarfile.open(full_path, mode)
+
     for file in archive:
         if file.isfile():
             mtime = file.mtime
@@ -101,6 +110,7 @@ def inventory_archive(full_path, short_path, writer):
             catalog_file(extract_path, recorded_path, mtime, writer)
             os.unlink(extract_path)
     writer.end_dir()
+    # XXX - does either the archive or pipe need to be closed?
 
 
 
