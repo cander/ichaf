@@ -106,7 +106,6 @@ def inventory_tarfile(full_path, short_path, writer):
             print 'extracted', extract_path, os.path.exists(extract_path)
             catalog_file(extract_path, recorded_path, mtime, writer)
             os.unlink(extract_path)
-    writer.end_dir()
     # XXX - does either the archive or pipe need to be closed?
 
 
