@@ -12,21 +12,16 @@ from disk_db import File, DbWriter
 
 def inventory(root_dir, writer):
     for dirpath, dirs, files in os.walk(root_dir):
-        #print 'walk output:', dirpath, dirs, files
         path_prefix = dirpath
         path_prefix = os.path.normpath(path_prefix)
-        writer.begin_dir(path_prefix)
         for filename in files:
             full_path = os.path.join(path_prefix,  filename)
             sbuf = os.stat(full_path)
             if  stat.S_ISREG(sbuf[stat.ST_MODE]):
                 mtime = sbuf[stat.ST_MTIME]
                 catalog_file(full_path, full_path, mtime, writer)
-                #(md5, unc_md5) = md5_filename(full_path)
-                #writer.write_file(full_path, md5, unc_md5, mtime=mtime)
                 if is_tarfile(filename):
                     inventory_tarfile(full_path, full_path, writer)
-        writer.end_dir()
 
 def catalog_file(full_path, recorded_path, mtime, writer):
     """

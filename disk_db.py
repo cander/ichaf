@@ -26,7 +26,8 @@ file_table = Table(
     'file', metadata,
     Column('id',                Integer,        primary_key=True),
     Column('vol_id',            Integer,        ForeignKey('volume.id')),
-    Column('full_path',         String,    ),
+    Column('dir_id',            Integer,        ForeignKey('directory.id')),
+    #Column('full_path',         String,    ),
     Column('file_name',         String(255),    ),
     Column('md5',               String(32),     nullable=False   ),
     Column('uncompressed_md5',  String(32),    ),
@@ -43,23 +44,24 @@ class Directory(object):
     
 
 class File(object): 
-    def __init__(self, full_path, md5, uncompressed_md5=None, mtime=None,
+    def __init__(self, directory, filename, md5, uncompressed_md5=None, mtime=None,
                  volume=None):
-        self.full_path = full_path
-        self.file_name = os.path.basename(full_path)
+        self.volume = volume
+        self.directory = directory
+        self.file_name = filename
         self.md5 = md5
         if uncompressed_md5 == None:
             self.uncompressed_md5 = md5
         else:
             self.uncompressed_md5 = uncompressed_md5
         self.mtime = mtime
-        self.volume = volume
 
 mapper(Volume, volume_table)
 mapper(Directory, directory_table, 
        properties=dict(volume=relation(Volume, uselist=False)))
 mapper(File, file_table, 
-       properties=dict(volume=relation(Volume, uselist=False)))
+       properties=dict(volume=relation(Volume, uselist=False),
+                       directory=relation(Directory, uselist=False)))
 
 Session = sessionmaker()
 session = Session()
@@ -69,23 +71,38 @@ class DbWriter(object):
     def __init__(self, volume):
         self.volume = volume
         self.session = session
+        self.dir_cache = {}
+        self.last_dir_path = None
 
     def write_file(self, full_path, md5, unc_md5, mtime=None):
         #print '%s|%s|%s' % (name, full_path, md5)
         print '%s %s %s' % (md5, full_path, unc_md5)
         if mtime:
             mtime = datetime.fromtimestamp(mtime)
-        f= File(full_path, md5, unc_md5, mtime=mtime)
+        dir = self.get_directory(full_path)
+        file_name = os.path.basename(full_path)
+        f= File(dir, file_name, md5, unc_md5, mtime=mtime)
         self.session.save(f)
 
-    def begin_dir(self, full_path):
-        #d = Directory(full_path, self.volume)
-        d = Directory(full_path)
-        self.session.save(d)
+    def get_directory(self, full_path):
+        """Get a (possibly cached) Directory object for a given path."""
+        dir_path = os.path.dirname(full_path)
+        if dir_path in self.dir_cache:
+            result = self.dir_cache[dir_path]
+        else:
+            # TODO: eventually, cache size should be limited, and misses
+            # should involve a query on dir_path and volume
+            result = Directory(dir_path)
+            self.session.save(result)
+            self.dir_cache[dir_path] = result
 
-    def end_dir(self):
-        self.session.flush()
-        self.session.commit()
+        if dir_path != self.last_dir_path:
+            # flush and commit as we move between directories
+            self.last_dir_path = dir_path
+            self.session.flush()
+            self.session.commit()
+
+        return result
 
 
 if __name__ == '__main__':
