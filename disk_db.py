@@ -14,6 +14,14 @@ volume_table = Table(
     Column('mtime',             DateTime,    default =datetime.now),
 )
 
+directory_table = Table(
+    'directory', metadata,
+    Column('id',                Integer,        primary_key=True),
+    Column('vol_id',            Integer,        ForeignKey('volume.id')),
+    Column('full_path',         String,        ),
+)
+
+
 file_table = Table(
     'file', metadata,
     Column('id',                Integer,        primary_key=True),
@@ -26,6 +34,13 @@ file_table = Table(
 )
 
 metadata.create_all()
+
+class Volume(object) : pass
+class Directory(object): 
+    def __init__(self, full_path, volume=None):
+        self.full_path = full_path
+        self.volume = volume
+    
 
 class File(object): 
     def __init__(self, full_path, md5, uncompressed_md5=None, mtime=None,
@@ -40,9 +55,9 @@ class File(object):
         self.mtime = mtime
         self.volume = volume
 
-class Volume(object) : pass
-
 mapper(Volume, volume_table)
+mapper(Directory, directory_table, 
+       properties=dict(volume=relation(Volume, uselist=False)))
 mapper(File, file_table, 
        properties=dict(volume=relation(Volume, uselist=False)))
 
@@ -62,6 +77,11 @@ class DbWriter(object):
             mtime = datetime.fromtimestamp(mtime)
         f= File(full_path, md5, unc_md5, mtime=mtime)
         self.session.save(f)
+
+    def begin_dir(self, full_path):
+        #d = Directory(full_path, self.volume)
+        d = Directory(full_path)
+        self.session.save(d)
 
     def end_dir(self):
         self.session.flush()

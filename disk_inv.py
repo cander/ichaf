@@ -15,6 +15,7 @@ def inventory(root_dir, writer):
         #print 'walk output:', dirpath, dirs, files
         path_prefix = dirpath
         path_prefix = os.path.normpath(path_prefix)
+        writer.begin_dir(path_prefix)
         for filename in files:
             full_path = os.path.join(path_prefix,  filename)
             sbuf = os.stat(full_path)
@@ -101,6 +102,7 @@ def inventory_archive(full_path, short_path, writer):
 
     for file in archive:
         if file.isfile():
+            # look for nexted tar files
             mtime = file.mtime
             extract_path = os.path.join(extract_dir, file.name)
             recorded_path = os.path.join(prefix, file.name)
