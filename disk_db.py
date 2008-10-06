@@ -27,11 +27,11 @@ file_table = Table(
     Column('id',                Integer,        primary_key=True),
     Column('vol_id',            Integer,        ForeignKey('volume.id')),
     Column('dir_id',            Integer,        ForeignKey('directory.id')),
-    #Column('full_path',         String,    ),
     Column('file_name',         String(255),    ),
     Column('md5',               String(32),     nullable=False   ),
     Column('uncompressed_md5',  String(32),    ),
-    Column('mtime',             DateTime,    ),
+    Column('mtime',             DateTime,      ),
+    Column('size',              Integer,       ),
 )
 
 metadata.create_all()
@@ -44,7 +44,8 @@ class Directory(object):
     
 
 class File(object): 
-    def __init__(self, directory, filename, md5, uncompressed_md5=None, mtime=None,
+    def __init__(self, directory, filename, md5, 
+                 uncompressed_md5=None, mtime=None, size=-1,
                  volume=None):
         self.volume = volume
         self.directory = directory
@@ -55,6 +56,8 @@ class File(object):
         else:
             self.uncompressed_md5 = uncompressed_md5
         self.mtime = mtime
+        self.size = size
+        
 
 mapper(Volume, volume_table)
 mapper(Directory, directory_table, 
@@ -74,14 +77,14 @@ class DbWriter(object):
         self.dir_cache = {}
         self.last_dir_path = None
 
-    def write_file(self, full_path, md5, unc_md5, mtime=None):
+    def write_file(self, full_path, md5, unc_md5, mtime=None, size=-1):
         #print '%s|%s|%s' % (name, full_path, md5)
         print '%s %s %s' % (md5, full_path, unc_md5)
         if mtime:
             mtime = datetime.fromtimestamp(mtime)
         dir = self.get_directory(full_path)
         file_name = os.path.basename(full_path)
-        f= File(dir, file_name, md5, unc_md5, mtime=mtime)
+        f= File(dir, file_name, md5, unc_md5, mtime=mtime, size=size)
         self.session.save(f)
 
     def get_directory(self, full_path):

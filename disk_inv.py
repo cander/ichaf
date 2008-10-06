@@ -19,17 +19,18 @@ def inventory(root_dir, writer):
             sbuf = os.stat(full_path)
             if  stat.S_ISREG(sbuf[stat.ST_MODE]):
                 mtime = sbuf[stat.ST_MTIME]
-                catalog_file(full_path, full_path, mtime, writer)
+                size = sbuf[stat.ST_SIZE]
+                catalog_file(full_path, full_path, mtime, size, writer)
                 if is_tarfile(filename):
                     inventory_tarfile(full_path, full_path, writer)
 
-def catalog_file(full_path, recorded_path, mtime, writer):
+def catalog_file(full_path, recorded_path, mtime, size, writer):
     """
     Catalog one file in the file system (full_path) under the name
     recorded_path.
     """
     (md5, unc_md5) = md5_filename(full_path)
-    writer.write_file(recorded_path, md5, unc_md5, mtime=mtime)
+    writer.write_file(recorded_path, md5, unc_md5, mtime=mtime, size=size)
 
 
 def md5_filename(path):
@@ -97,14 +98,15 @@ def inventory_tarfile(full_path, short_path, writer):
 
     for file in archive:
         if file.isfile():
-            # look for nexted tar files
+            # TODO: look for nested tar files
             mtime = file.mtime
+            size = file.size
             extract_path = os.path.join(extract_dir, file.name)
             recorded_path = os.path.join(prefix, file.name)
             # XXX - is extract safe in the presence of absolute paths?
             archive.extract(file, extract_dir)
             print 'extracted', extract_path, os.path.exists(extract_path)
-            catalog_file(extract_path, recorded_path, mtime, writer)
+            catalog_file(extract_path, recorded_path, mtime, size, writer)
             os.unlink(extract_path)
     # XXX - does either the archive or pipe need to be closed?
 
