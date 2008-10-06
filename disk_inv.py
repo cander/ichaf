@@ -24,8 +24,8 @@ def inventory(root_dir, writer):
                 catalog_file(full_path, full_path, mtime, writer)
                 #(md5, unc_md5) = md5_filename(full_path)
                 #writer.write_file(full_path, md5, unc_md5, mtime=mtime)
-                if is_archive(filename):
-                    inventory_archive(full_path, full_path, writer)
+                if is_tarfile(filename):
+                    inventory_tarfile(full_path, full_path, writer)
         writer.end_dir()
 
 def catalog_file(full_path, recorded_path, mtime, writer):
@@ -74,8 +74,8 @@ def md5_file(file):
     return md5.hexdigest()
 
 
-def is_archive(filename):
-    """Is this file an archive that we're prepared to index?"""
+def is_tarfile(filename):
+    """Is this file a tar file that we're prepared to index?"""
     # XXX - only deal with tar files, right now
     extensions = [ '.tar', '.tar.gz', '.tgz', '.tar.Z' ]
     for ext in extensions:
@@ -83,8 +83,8 @@ def is_archive(filename):
             return True
     return False
 
-def inventory_archive(full_path, short_path, writer):
-    """Inventory an archive file."""
+def inventory_tarfile(full_path, short_path, writer):
+    """Inventory a tar file."""
     extract_dir = '/tmp/extract'    #XXX - hardcoded
     #prefix = '%s/[%s]' % (os.path.dirname(short_path),
     #                      os.path.basename(short_path))
