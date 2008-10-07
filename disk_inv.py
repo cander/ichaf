@@ -11,7 +11,13 @@ import zipfile
 import StringIO
 from datetime import datetime
 
-from disk_db import File, DbWriter
+from disk_db import Volume, DbWriter, session
+
+def inventory_dirs(writer, dir_list):
+    """Inventory a list of directories, writing the result to the
+       specified destination writer."""
+    for d in dir_list:
+        inventory(d, writer)
 
 def inventory(root_dir, writer):
     for dirpath, dirs, files in os.walk(root_dir):
@@ -153,7 +159,27 @@ class StdoutWriter(object):
         # name = os.path.basename(full_path)
         print '%s %s' % (md5, full_path)
 
+def get_volume(vol_name, expect_empty):
+    """Get a Volume object from the database."""
+    q = session.query(Volume)
+    q = q.filter_by(vol_name=vol_name)
+    print q
+    result = q.one()
+
+    return result
+
+def db_inventory(vol_name, dir_list):
+    vol = get_volume(vol_name, True)
+    if vol != None:
+        writer = DbWriter(vol)
+        inventory_dirs(writer, dir_list)
+
+def main(args):
+    cmd = args[1]
+    if cmd == 'inventory':
+        vol_name = args[2]
+        dirs = args[3:]
+        db_inventory(vol_name, dirs)
+
 if __name__ == '__main__':
-    #writer = StdoutWriter('/tmp')
-    writer = DbWriter('/tmp')
-    inventory(sys.argv[1], writer)
+    main(sys.argv)

@@ -38,15 +38,14 @@ metadata.create_all()
 
 class Volume(object) : pass
 class Directory(object): 
-    def __init__(self, full_path, volume=None):
+    def __init__(self, full_path, volume):
         self.full_path = full_path
         self.volume = volume
     
 
 class File(object): 
-    def __init__(self, directory, filename, md5, 
-                 uncompressed_md5=None, mtime=None, size=-1,
-                 volume=None):
+    def __init__(self, volume, directory, filename, md5, 
+                 uncompressed_md5=None, mtime=None, size=-1):
         self.volume = volume
         self.directory = directory
         self.file_name = filename
@@ -82,7 +81,7 @@ class DbWriter(object):
         print '%s %s %s' % (md5, full_path, unc_md5)
         dir = self.get_directory(full_path)
         file_name = os.path.basename(full_path)
-        f= File(dir, file_name, md5, unc_md5, mtime=mtime, size=size)
+        f= File(self.volume, dir, file_name, md5, unc_md5, mtime=mtime, size=size)
         self.session.save(f)
 
     def get_directory(self, full_path):
@@ -93,7 +92,7 @@ class DbWriter(object):
         else:
             # TODO: eventually, cache size should be limited, and misses
             # should involve a query on dir_path and volume
-            result = Directory(dir_path)
+            result = Directory(dir_path, self.volume)
             self.session.save(result)
             self.dir_cache[dir_path] = result
 
@@ -104,18 +103,3 @@ class DbWriter(object):
             self.session.commit()
 
         return result
-
-
-if __name__ == '__main__':
-
-    vol_q = session.query(Volume)
-    vol1 = vol_q.get(1)
-
-    f= File('a/b/c', '1234', volume = vol1, mtime=datetime.now())
-    session.save(f)
-    session.flush()
-    session.commit()
-
-    files = session.query(File)
-    print '###########'
-    print 'files:', files.count()
