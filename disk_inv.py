@@ -57,7 +57,10 @@ def md5_filename(path):
     pipe = None
     if path.endswith('.gz'):
         cmd = 'gzip -d < %s' % path
-        print 'uncompress cmd:', cmd
+        pipe = Popen(cmd, shell=True, bufsize=1024 * 4, stdout=PIPE).stdout
+    elif path.endswith('.Z'):
+        cmd = 'zcat "%s"' % path
+        #print 'uncompress cmd:', cmd
         pipe = Popen(cmd, shell=True, bufsize=1024 * 4, stdout=PIPE).stdout
     # else compress, etc
 
@@ -103,7 +106,7 @@ def inventory_tarfile(full_path, short_path, writer):
     # XXX - assume tar files, right now
     # figure out the right mode and type of archiver
     if full_path.endswith('.tar.Z'):
-        cmd = 'zcat %s' % full_path
+        cmd = 'zcat "%s"' % full_path
         pipe = Popen(cmd, shell=True, bufsize=4096, stdout=PIPE).stdout
         archive = tarfile.open(full_path, 'r|', pipe)
     else:
@@ -119,7 +122,6 @@ def inventory_tarfile(full_path, short_path, writer):
             recorded_path = os.path.join(prefix, file.name)
             # XXX - is extract safe in the presence of absolute paths?
             archive.extract(file, extract_dir)
-            print 'extracted', extract_path, os.path.exists(extract_path)
             catalog_file(extract_path, recorded_path, mtime, size, writer)
             os.unlink(extract_path)
     # XXX - does either the archive or pipe need to be closed?

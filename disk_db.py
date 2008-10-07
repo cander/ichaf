@@ -1,4 +1,5 @@
 import os
+import sys
 from sqlalchemy import *
 from sqlalchemy.orm import *
 from datetime import datetime
@@ -77,13 +78,12 @@ class DbWriter(object):
         self.last_dir_path = None
 
     def write_file(self, full_path, md5, unc_md5, mtime=None, size=-1):
-        #print '%s|%s|%s' % (name, full_path, md5)
-        print '%s %s %s' % (md5, full_path, unc_md5)
         dir = self.get_directory(full_path)
         file_name = os.path.basename(full_path)
         f= File(self.volume, dir, file_name, md5, unc_md5, mtime=mtime, size=size)
         self.session.save(f)
 
+    # def done(self): flush, commit
     def get_directory(self, full_path):
         """Get a (possibly cached) Directory object for a given path."""
         dir_path = os.path.dirname(full_path)
@@ -101,5 +101,7 @@ class DbWriter(object):
             self.last_dir_path = dir_path
             self.session.flush()
             self.session.commit()
+            print '.',
+            sys.stdout.flush()
 
         return result
