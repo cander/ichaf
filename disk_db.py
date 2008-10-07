@@ -28,8 +28,8 @@ file_table = Table(
     Column('vol_id',            Integer,        ForeignKey('volume.id')),
     Column('dir_id',            Integer,        ForeignKey('directory.id')),
     Column('file_name',         String(255),    ),
-    Column('md5',               String(32),     nullable=False   ),
-    Column('uncompressed_md5',  String(32),    ),
+    Column('md5',               String(32),     nullable=False, index=True   ),
+    Column('uncompressed_md5',  String(32),     index=True   ),
     Column('mtime',             DateTime,      ),
     Column('size',              Integer,       ),
 )
@@ -80,8 +80,6 @@ class DbWriter(object):
     def write_file(self, full_path, md5, unc_md5, mtime=None, size=-1):
         #print '%s|%s|%s' % (name, full_path, md5)
         print '%s %s %s' % (md5, full_path, unc_md5)
-        if mtime:
-            mtime = datetime.fromtimestamp(mtime)
         dir = self.get_directory(full_path)
         file_name = os.path.basename(full_path)
         f= File(dir, file_name, md5, unc_md5, mtime=mtime, size=size)

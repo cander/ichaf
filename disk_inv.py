@@ -7,6 +7,9 @@ from types import StringTypes
 import hashlib
 from subprocess import Popen, PIPE
 import tarfile
+import zipfile
+import StringIO
+from datetime import datetime
 
 from disk_db import File, DbWriter
 
@@ -21,8 +24,11 @@ def inventory(root_dir, writer):
                 mtime = sbuf[stat.ST_MTIME]
                 size = sbuf[stat.ST_SIZE]
                 catalog_file(full_path, full_path, mtime, size, writer)
-                if is_tarfile(filename):
+                if is_tarfile(full_path):
                     inventory_tarfile(full_path, full_path, writer)
+                elif zipfile.is_zipfile(full_path):
+                    inventory_zipfile(full_path, full_path, writer)
+
 
 def catalog_file(full_path, recorded_path, mtime, size, writer):
     """
@@ -30,6 +36,7 @@ def catalog_file(full_path, recorded_path, mtime, size, writer):
     recorded_path.
     """
     (md5, unc_md5) = md5_filename(full_path)
+    mtime = datetime.fromtimestamp(mtime)
     writer.write_file(recorded_path, md5, unc_md5, mtime=mtime, size=size)
 
 
@@ -70,14 +77,15 @@ def md5_file(file):
     return md5.hexdigest()
 
 
-def is_tarfile(filename):
+def is_tarfile(full_path):
+    result = False
     """Is this file a tar file that we're prepared to index?"""
-    # XXX - only deal with tar files, right now
-    extensions = [ '.tar', '.tar.gz', '.tgz', '.tar.Z' ]
-    for ext in extensions:
-        if filename.endswith(ext):
-            return True
-    return False
+    result = False
+    if tarfile.is_tarfile(full_path) or full_path.endswith('.tar.Z'):
+        result = True
+    else:
+        result = False
+    return result
 
 def inventory_tarfile(full_path, short_path, writer):
     """Inventory a tar file."""
@@ -109,6 +117,30 @@ def inventory_tarfile(full_path, short_path, writer):
             catalog_file(extract_path, recorded_path, mtime, size, writer)
             os.unlink(extract_path)
     # XXX - does either the archive or pipe need to be closed?
+
+
+def inventory_zipfile(full_path, short_path, writer):
+    """Inventory a zip file."""
+    prefix = os.path.join(os.path.dirname(short_path),
+                          '[%s]' % os.path.basename(short_path))
+    archive = zipfile.ZipFile(full_path, 'r')
+
+    for info in archive.infolist():
+        file_name = info.filename
+        if not file_name.endswith('/'):
+            # regular file - not directory
+            recorded_path = os.path.join(prefix, file_name)
+            size = info.file_size
+            (year, month, day, hour, mins, secs) = info.date_time
+            mtime = datetime(year, month, day, hour, mins, secs)
+
+            # read the whole file into memory - yikes!
+            contents = archive.read(file_name)
+            file = StringIO.StringIO(contents)
+            md5 = md5_file(file)
+            file.close()
+            writer.write_file(recorded_path, md5, md5, mtime=mtime, size=size)
+    # XXX - does either the archive need to be closed?
 
 
 
