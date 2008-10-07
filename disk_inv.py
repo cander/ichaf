@@ -143,11 +143,15 @@ def inventory_zipfile(full_path, short_path, writer):
             mtime = datetime(year, month, day, hour, mins, secs)
 
             # read the whole file into memory - yikes!
-            contents = archive.read(file_name)
-            file = StringIO.StringIO(contents)
-            md5 = md5_file(file)
-            file.close()
-            writer.write_file(recorded_path, md5, md5, mtime=mtime, size=size)
+            try:
+                contents = archive.read(file_name)
+                file = StringIO.StringIO(contents)
+                md5 = md5_file(file)
+                file.close()
+                writer.write_file(recorded_path, md5, md5, mtime=mtime, size=size)
+            except Exception, err:
+                print 'Exception processing file %s within zip %s: %s' % \
+                    (file_name, short_path, err)
     # XXX - does either the archive need to be closed?
 
 
