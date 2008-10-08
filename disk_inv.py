@@ -56,7 +56,7 @@ def md5_filename(path):
     # look for a compressed file
     pipe = None
     if path.endswith('.gz'):
-        cmd = 'gzip -d < %s' % path
+        cmd = 'gzip -d < "%s"' % path
         pipe = Popen(cmd, shell=True, bufsize=1024 * 4, stdout=PIPE).stdout
     elif path.endswith('.Z'):
         cmd = 'zcat "%s"' % path
@@ -113,17 +113,30 @@ def inventory_tarfile(full_path, short_path, writer):
         mode = 'r:*'
         archive = tarfile.open(full_path, mode)
 
-    for file in archive:
-        if file.isfile():
-            # TODO: look for nested tar files
-            mtime = file.mtime
-            size = file.size
-            extract_path = os.path.join(extract_dir, file.name)
-            recorded_path = os.path.join(prefix, file.name)
-            # XXX - is extract safe in the presence of absolute paths?
-            archive.extract(file, extract_dir)
-            catalog_file(extract_path, recorded_path, mtime, size, writer)
-            os.unlink(extract_path)
+    try:
+        last_file_name = None
+        for file in archive:
+            if file.isfile():
+                # TODO: look for nested tar files
+                mtime = file.mtime
+                size = file.size
+                extract_path = os.path.join(extract_dir, file.name)
+                recorded_path = os.path.join(prefix, file.name)
+                # XXX - is extract safe in the presence of absolute paths?
+                archive.extract(file, extract_dir)
+                if os.access(extract_path, os.F_OK):
+                    catalog_file(extract_path, recorded_path, mtime, 
+                                 size, writer)
+
+                    os.unlink(extract_path)
+                else:
+                    print 'Error: failed to extract %s from tar file %s' % \
+                          (extract_path, full_path)
+                last_file_name = file.name
+    except Exception, err:
+        print 'Exception inventorying tar file %s - last file was %s: %s' % \
+              (full_path, last_file_name, err)
+
     # XXX - does either the archive or pipe need to be closed?
 
 
