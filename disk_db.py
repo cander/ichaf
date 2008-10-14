@@ -78,6 +78,16 @@ class DbWriter(object):
         self.last_dir_path = None
 
     def write_file(self, full_path, md5, unc_md5, mtime=None, size=-1):
+        # this is lame: full_path may contain non-ascii characters,
+        # especially in the directory.  The DB can't store those in a
+        # String, and I'm too lazy to figure out how to encode everything
+        # into Unicode
+        try:
+            full_path = full_path.encode('utf-8')
+        except UnicodeDecodeError:
+            print "Unable to process path: %s" % full_path
+            return
+
         dir = self.get_directory(full_path)
         file_name = os.path.basename(full_path)
         f= File(self.volume, dir, file_name, md5, unc_md5, mtime=mtime, size=size)
