@@ -25,15 +25,21 @@ def inventory(root_dir, writer):
         path_prefix = os.path.normpath(path_prefix)
         for filename in files:
             full_path = os.path.join(path_prefix,  filename)
-            sbuf = os.stat(full_path)
-            if  stat.S_ISREG(sbuf[stat.ST_MODE]):
-                mtime = sbuf[stat.ST_MTIME]
-                size = sbuf[stat.ST_SIZE]
-                catalog_file(full_path, full_path, mtime, size, writer)
-                if is_tarfile(full_path):
-                    inventory_tarfile(full_path, full_path, writer)
-                elif zipfile.is_zipfile(full_path):
-                    inventory_zipfile(full_path, full_path, writer)
+            if not os.access(full_path, os.F_OK):
+                print 'File %s is not accessible' % full_path
+                continue
+            try:
+                sbuf = os.stat(full_path)
+                if stat.S_ISREG(sbuf[stat.ST_MODE]):
+                    mtime = sbuf[stat.ST_MTIME]
+                    size = sbuf[stat.ST_SIZE]
+                    catalog_file(full_path, full_path, mtime, size, writer)
+                    if is_tarfile(full_path):
+                        inventory_tarfile(full_path, full_path, writer)
+                    elif zipfile.is_zipfile(full_path):
+                        inventory_zipfile(full_path, full_path, writer)
+            except Exception, err:
+                print 'Error processing %s: %s' % (full_path, err)
 
 
 def catalog_file(full_path, recorded_path, mtime, size, writer):
@@ -204,6 +210,8 @@ def main(args):
         vol_name = args[2]
         dirs = args[3:]
         db_inventory(vol_name, dirs)
+    else:
+        print 'Unknown command "%s" - quitting' % cmd
 
 if __name__ == '__main__':
     main(sys.argv)
