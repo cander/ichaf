@@ -146,25 +146,30 @@ def inventory_zipfile(full_path, short_path, writer):
                           '[%s]' % os.path.basename(short_path))
     archive = zipfile.ZipFile(full_path, 'r')
 
-    for info in archive.infolist():
-        file_name = info.filename
-        if not file_name.endswith('/'):
-            # regular file - not directory
-            recorded_path = os.path.join(prefix, file_name)
-            size = info.file_size
-            (year, month, day, hour, mins, secs) = info.date_time
-            mtime = datetime(year, month, day, hour, mins, secs)
+    try:
+        for info in archive.infolist():
+            file_name = info.filename
+            if not file_name.endswith('/'):
+                # regular file - not directory
+                recorded_path = os.path.join(prefix, file_name)
+                size = info.file_size
+                (year, month, day, hour, mins, secs) = info.date_time
+                mtime = datetime(year, month, day, hour, mins, secs)
 
-            # read the whole file into memory - yikes!
-            try:
-                contents = archive.read(file_name)
-                file = StringIO.StringIO(contents)
-                md5 = md5_file(file)
-                file.close()
-                writer.write_file(recorded_path, md5, md5, mtime=mtime, size=size)
-            except Exception, err:
-                print 'Exception processing file %s within zip %s: %s' % \
-                    (file_name, short_path, err)
+                # read the whole file into memory - yikes!
+                try:
+                    contents = archive.read(file_name)
+                    file = StringIO.StringIO(contents)
+                    md5 = md5_file(file)
+                    file.close()
+                    writer.write_file(recorded_path, md5, md5, mtime=mtime, size=size)
+                except Exception, err:
+                    print 'Exception processing file %s within zip %s: %s' % \
+                        (file_name, short_path, err)
+            last_file_name = file_name
+    except Exception, err:
+        print 'Exception inventorying zip file %s - last file was %s: %s' % \
+              (full_path, last_file_name, err)
     # XXX - does either the archive need to be closed?
 
 
