@@ -69,6 +69,11 @@ mapper(File, file_table,
 Session = sessionmaker()
 session = Session()
 
+def get_files_by_hash(md5):
+    query = session.query(File)
+    query = query.filter(or_(File.md5 == md5, File.uncompressed_md5 == md5))
+    return query.all()
+
 
 class DbWriter(object):
     def __init__(self, volume):

@@ -11,7 +11,7 @@ import zipfile
 import StringIO
 from datetime import datetime
 
-from disk_db import Volume, DbWriter, session
+from disk_db import Volume, DbWriter, session, get_files_by_hash
 
 def inventory_dirs(writer, dir_list):
     """Inventory a list of directories, writing the result to the
@@ -204,12 +204,30 @@ def db_inventory(vol_name, dir_list):
         writer = DbWriter(vol)
         inventory_dirs(writer, dir_list)
 
+def exists_list(files_or_hashes):
+    """Given a list of file names or MD5 hashes (anything that isn't a
+       file name) print the files that are present in the DB."""
+    for filename in files_or_hashes:
+        if os.access(filename, os.F_OK):
+            file = open(filename, 'r')
+            md5 = md5_file(file)
+            file.close()
+        else:
+            md5 = filename
+
+        found_files = get_files_by_hash(md5)
+        print filename, '->', len(found_files)
+
+
 def main(args):
     cmd = args[1]
     if cmd == 'inventory':
         vol_name = args[2]
         dirs = args[3:]
         db_inventory(vol_name, dirs)
+    elif cmd == 'exists':
+        files_or_hashes = args[2:]
+        exists_list(files_or_hashes)
     else:
         print 'Unknown command "%s" - quitting' % cmd
 
