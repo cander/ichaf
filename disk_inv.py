@@ -217,6 +217,10 @@ def exists_list(files_or_hashes):
 
         found_files = get_files_by_hash(md5)
         print filename, '->', len(found_files)
+        for f in found_files:
+            dir = f.directory
+            vol = dir.volume
+            print '%s::%s/%s' % (vol.vol_name, dir.full_path, f.file_name)
 
 
 def main(args):
