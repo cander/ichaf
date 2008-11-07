@@ -205,6 +205,14 @@ def db_inventory(vol_name, dir_list):
         writer = DbWriter(vol)
         inventory_dirs(writer, dir_list)
 
+def print_missing_md5(item, regular_md5, uncompressed_md5=None):
+    """Print an item whose md5(s) cannot be found in the DB."""
+    found_files = get_files_by_hash(regular_md5)
+    if len(found_files) == 0 and uncompressed_md5 != regular_md5:
+        found_files = get_files_by_hash(uncompressed_md5)
+    if len(found_files) == 0:
+        print item
+
 def missing_list(files_or_hashes):
     """Given a list of file names or MD5 hashes (anything that isn't a
        file name) print the files that are missing in the DB."""
@@ -214,26 +222,23 @@ def missing_list(files_or_hashes):
             filename = item
             sbuf = os.stat(filename)
             if stat.S_ISREG(sbuf[stat.ST_MODE]):
-                file = open(filename, 'r')
-                md5 = md5_file(file)
-                file.close()
+                (md5, unc_md5) = md5_filename(filename)
+                print_missing_md5(filename, md5, unc_md5)
             elif stat.S_ISDIR(sbuf[stat.ST_MODE]):
-                print 'directories not supported - yet'
-                continue
+                for dirpath, dirs, files in os.walk(item):
+                    if files:
+                        file_paths = [os.path.join(dirpath, x) for x in files]
+                        missing_list(file_paths)
             else:
                 print 'Uknown file type:', filename
         else:
             possible_md5 = item.lower()
             if md5_pattern.match(possible_md5):
-                md5 = possible_md5
+                print_missing_md5(item, possible_md5)
             else:
                 print 'input string %s is neither a file, directory,' \
                       'or hash' % item
-                continue
 
-        found_files = get_files_by_hash(md5)
-        if len(found_files) == 0:
-            print item
 
 def exists_list(files_or_hashes):
     """Given a list of file names or MD5 hashes (anything that isn't a
