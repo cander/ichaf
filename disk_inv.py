@@ -204,6 +204,26 @@ def db_inventory(vol_name, dir_list):
         writer = DbWriter(vol)
         inventory_dirs(writer, dir_list)
 
+def missing_list(files_or_hashes):
+    """Given a list of file names or MD5 hashes (anything that isn't a
+       file name) print the files that are missing in the DB."""
+    for filename in files_or_hashes:
+        if os.access(filename, os.F_OK):
+            sbuf = os.stat(filename)
+            if stat.S_ISREG(sbuf[stat.ST_MODE]):
+                file = open(filename, 'r')
+                md5 = md5_file(file)
+                file.close()
+            elif stat.S_ISDIR(sbuf[stat.ST_MODE]):
+                print 'directories not supported - yet'
+                continue
+        else:
+            md5 = filename
+
+        found_files = get_files_by_hash(md5)
+        if len(found_files) == 0:
+            print filename
+
 def exists_list(files_or_hashes):
     """Given a list of file names or MD5 hashes (anything that isn't a
        file name) print the files that are present in the DB."""
@@ -229,6 +249,9 @@ def main(args):
         vol_name = args[2]
         dirs = args[3:]
         db_inventory(vol_name, dirs)
+    elif cmd == 'missing':
+        files_or_hashes = args[2:]
+        missing_list(files_or_hashes)
     elif cmd == 'exists':
         files_or_hashes = args[2:]
         exists_list(files_or_hashes)
