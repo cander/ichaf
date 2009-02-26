@@ -290,6 +290,13 @@ def exists_md5_list(hash_files):
             print 'No MD5 hash found in input line: "%s"' % line
 
 
+def list_volumes():
+    """List all of the volumes in the DB."""
+    q = session.query(Volume)
+    for vol in q.all():
+        print vol.mtime, vol.vol_name, vol.notes
+
+
 def main(args):
     cmd = args[1]
     if cmd == 'inventory':
@@ -305,6 +312,8 @@ def main(args):
     elif cmd == 'exists-md5-list':
         hash_files = args[2:]
         exists_md5_list(hash_files)
+    elif cmd == 'list-vols':
+        list_volumes()
     else:
         print 'Unknown command "%s" - quitting' % cmd
 
