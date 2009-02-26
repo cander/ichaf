@@ -11,6 +11,7 @@ import zipfile
 import StringIO
 from datetime import datetime
 import re
+import fileinput
 
 from disk_db import Volume, DbWriter, session, get_files_by_hash
 
@@ -258,6 +259,26 @@ def exists_list(files_or_hashes):
             vol = dir.volume
             print '%s::%s/%s' % (vol.vol_name, dir.full_path, f.file_name)
 
+def exists_md5_list(hash_files):
+    """
+    Given a list of text file names that contain MD5 hashes (anywhere in the
+    line) print the files that are present in the DB.
+    """
+    md5_pattern = re.compile('([0-9a-fA-F]{32})')
+    for line in fileinput.input(hash_files):
+        match = md5_pattern.search(line)
+        if match:
+            md5 = match.group(1)
+            found_files = get_files_by_hash(md5)
+            print md5, '->', len(found_files)
+            for f in found_files:
+                dir = f.directory
+                vol = dir.volume
+                print '%s::%s/%s' % (vol.vol_name, dir.full_path, f.file_name)
+        else:
+            # ignore invalid lines?
+            print 'No MD5 hash found in input line: "%s"' % line
+
 
 def main(args):
     cmd = args[1]
@@ -271,6 +292,9 @@ def main(args):
     elif cmd == 'exists':
         files_or_hashes = args[2:]
         exists_list(files_or_hashes)
+    elif cmd == 'exists-md5-list':
+        hash_files = args[2:]
+        exists_md5_list(hash_files)
     else:
         print 'Unknown command "%s" - quitting' % cmd
 
