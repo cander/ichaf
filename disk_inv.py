@@ -15,6 +15,7 @@ import fileinput
 
 from disk_db import Volume, DbWriter, session, get_files_by_hash
 
+
 def inventory_dirs(writer, dir_list):
     """Inventory a list of directories, writing the result to the
        specified destination writer."""
@@ -22,6 +23,11 @@ def inventory_dirs(writer, dir_list):
         inventory(d, writer)
 
 def inventory(root_dir, writer):
+    """
+    Inventory a directory tree starting at a specified root.
+    Output the results to the specified writer object - i.e., most like a
+    DB, but it could be a file.
+    """
     for dirpath, dirs, files in os.walk(root_dir):
         path_prefix = dirpath
         path_prefix = os.path.normpath(path_prefix)
@@ -215,8 +221,10 @@ def print_missing_md5(item, regular_md5, uncompressed_md5=None):
         print item
 
 def missing_list(files_or_hashes):
-    """Given a list of file names or MD5 hashes (anything that isn't a
-       file name) print the files that are missing in the DB."""
+    """
+    Given a list of file names or MD5 hashes (anything that isn't a
+    file name) print the files that are missing in the DB.
+    """
     md5_pattern = re.compile('^[0-9a-f]{32}$')
     for item in files_or_hashes:
         if os.access(item, os.F_OK):
@@ -261,8 +269,10 @@ def exists_list(files_or_hashes):
 
 def exists_md5_list(hash_files):
     """
-    Given a list of text file names that contain MD5 hashes (anywhere in the
-    line) print the files that are present in the DB.
+    Given a list of file names that contain MD5 hashes print the files
+    that are present in the DB.  The files are assumed to be text files
+    that contain one hash anywhere within each line.  This is compatible
+    with both md5(1) and md5sum(1).
     """
     md5_pattern = re.compile('([0-9a-fA-F]{32})')
     for line in fileinput.input(hash_files):
