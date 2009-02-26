@@ -241,8 +241,8 @@ def missing_list(files_or_hashes):
 
 
 def exists_list(files_or_hashes):
-    """Given a list of file names or MD5 hashes (anything that isn't a
-       file name) print the files that are present in the DB."""
+    """Given a list of file names or MD5 hashes (anything that isn't an
+       existing file name) print the files that are present in the DB."""
     for filename in files_or_hashes:
         if os.access(filename, os.F_OK):
             file = open(filename, 'r')
