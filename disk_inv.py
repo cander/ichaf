@@ -267,10 +267,10 @@ def exists_list(files_or_hashes):
             vol = dir.volume
             print '%s::%s/%s' % (vol.vol_name, dir.full_path, f.file_name)
 
-def exists_md5_list(hash_files):
+def missing_md5_list(hash_files):
     """
     Given a list of file names that contain MD5 hashes print the files
-    that are present in the DB.  The files are assumed to be text files
+    that are missing in the DB.  The files are assumed to be text files
     that contain one hash anywhere within each line.  This is compatible
     with both md5(1) and md5sum(1).
     """
@@ -280,14 +280,11 @@ def exists_md5_list(hash_files):
         if match:
             md5 = match.group(1)
             found_files = get_files_by_hash(md5)
-            print md5, '->', len(found_files)
-            for f in found_files:
-                dir = f.directory
-                vol = dir.volume
-                print '%s::%s/%s' % (vol.vol_name, dir.full_path, f.file_name)
+            if not found_files:
+                print line.strip()
         else:
             # ignore invalid lines?
-            print 'No MD5 hash found in input line: "%s"' % line
+            print 'No MD5 hash found in input line: "%s"' % line.strip()
 
 
 def list_volumes():
@@ -306,12 +303,12 @@ def main(args):
     elif cmd == 'missing':
         files_or_hashes = args[2:]
         missing_list(files_or_hashes)
+    elif cmd == 'missing-md5':
+        files_or_hashes = args[2:]
+        missing_md5_list(files_or_hashes)
     elif cmd == 'exists':
         files_or_hashes = args[2:]
         exists_list(files_or_hashes)
-    elif cmd == 'exists-md5-list':
-        hash_files = args[2:]
-        exists_md5_list(hash_files)
     elif cmd == 'list-vols':
         list_volumes()
     else:
