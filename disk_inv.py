@@ -293,6 +293,13 @@ def list_volumes():
     for vol in q.all():
         print vol.mtime, vol.vol_name, vol.notes
 
+def create_volume(vol_name, notes=""):
+        vol = Volume(vol_name=vol_name, notes=notes)
+        print 'Creating volume:', vol
+        session.save(vol)
+        session.flush()
+        session.commit()
+
 
 def main(args):
     cmd = args[1]
@@ -311,6 +318,13 @@ def main(args):
         exists_list(files_or_hashes)
     elif cmd == 'list-vols':
         list_volumes()
+    elif cmd == 'create-vol':
+        if len(args) == 3:
+            create_volume(args[2])
+        elif len(args) == 4:
+            create_volume(args[2], args[3])
+        else:
+            print 'Too many arguments for create-vol command'
     else:
         print 'Unknown command "%s" - quitting' % cmd
 

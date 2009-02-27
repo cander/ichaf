@@ -37,7 +37,11 @@ file_table = Table(
 
 metadata.create_all()
 
-class Volume(object) : pass
+class Volume(object):
+    def __init__(self, vol_name, notes=""):
+        self.vol_name = vol_name
+        self.notes = notes
+
 class Directory(object): 
     def __init__(self, full_path, volume):
         self.full_path = full_path
