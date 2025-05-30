@@ -4,4 +4,6 @@ version = "0.1.0"
 description = "I can haz file?"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "sqlalchemy>=2.0.41",
+]
